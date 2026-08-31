@@ -1,0 +1,74 @@
+{
+  "monorepo": true,
+  "root": "apps/main",
+  "sourceRoot": "apps/main/src",
+  "compilerOptions": {
+    "webpack": true,
+    "tsConfigPath": "apps/main/tsconfig.app.json"
+  },
+  "projects": {
+    "api-gateway": {
+      "type": "application",
+      "root": "apps/api-gateway",
+      "entryFile": "main",
+      "sourceRoot": "apps/api-gateway/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/api-gateway/tsconfig.app.json"
+      }
+    },
+    "caja": {
+      "type": "application",
+      "root": "apps/caja",
+      "entryFile": "main",
+      "sourceRoot": "apps/caja/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/caja/tsconfig.app.json"
+      }
+    },
+    "clientes": {
+      "type": "application",
+      "root": "apps/clientes",
+      "entryFile": "main",
+      "sourceRoot": "apps/clientes/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/clientes/tsconfig.app.json"
+      }
+    },
+    "facturacion": {
+      "type": "application",
+      "root": "apps/facturacion",
+      "entryFile": "main",
+      "sourceRoot": "apps/facturacion/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/facturacion/tsconfig.app.json"
+      }
+    },
+    "main": {
+      "type": "application",
+      "root": "apps/main",
+      "entryFile": "main",
+      "sourceRoot": "apps/main/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/main/tsconfig.app.json"
+      }
+    },
+    "stock": {
+      "type": "application",
+      "root": "apps/stock",
+      "entryFile": "main",
+      "sourceRoot": "apps/stock/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/stock/tsconfig.app.json"
+      }
+    },
+    "ventas": {
+      "type": "application",
+      "root": "apps/ventas",
+      "entryFile": "main",
+      "sourceRoot": "apps/ventas/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/ventas/tsconfig.app.json"
+      }
+    }
+  }
+}
