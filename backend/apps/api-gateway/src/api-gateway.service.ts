@@ -1,8 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 
 @Injectable()
 export class ApiGatewayService {
-  getHello(): string {
-    return 'Hello World!';
+  constructor(
+    @Inject('CLIENTES_SERVICE')
+    private readonly clientesClient: ClientProxy,
+  ) {}
+
+  getHello() {
+    return this.clientesClient.send(
+      { cmd: 'clientes.listar' },
+      {},
+    );
   }
 }
