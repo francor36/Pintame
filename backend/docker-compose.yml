@@ -14,6 +14,22 @@ services:
     networks:
       - pintame-network
 
+  mysql:
+    image: mysql:8.4
+    container_name: pintame-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DB}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "${MYSQL_PORT}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - pintame-network
+
   mongodb:
     image: mongo:8
     container_name: pintame-mongodb
@@ -28,21 +44,10 @@ services:
     networks:
       - pintame-network
 
-  redis:
-    image: redis:8
-    container_name: pintame-redis
-    restart: unless-stopped
-    ports:
-      - "${REDIS_PORT}:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - pintame-network
-
 volumes:
   postgres_data:
+  mysql_data:
   mongodb_data:
-  redis_data:
 
 networks:
   pintame-network:
