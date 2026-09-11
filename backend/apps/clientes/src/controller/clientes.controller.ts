@@ -10,7 +10,7 @@ export class ClientesController {
   constructor(
     private readonly clientesService: ClientesService,
     private readonly saldoService: SaldoService,
-  ) {}
+  ) { }
 
   @MessagePattern({ cmd: 'clientes.listar' })
   listar() {
@@ -69,5 +69,14 @@ export class ClientesController {
     return this.saldoService.actualizarVencimientos(
       data.clienteId,
     );
+  }
+  @MessagePattern({ cmd: 'clientes.desactivar' })
+  desactivar(data: { id: number }) {
+    return this.clientesService.desactivar(data.id);
+  }
+
+  @MessagePattern({ cmd: 'clientes.activar' })
+  activar(data: { id: number }) {
+    return this.clientesService.activar(data.id);
   }
 }

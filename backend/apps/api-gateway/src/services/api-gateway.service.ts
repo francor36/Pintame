@@ -88,4 +88,17 @@ export class ApiGatewayService {
       },
     );
   }
+  desactivarCliente(clienteId: number) {
+    return this.clientesClient.send(
+      { cmd: 'clientes.desactivar' },
+      { id: clienteId },
+    );
+  }
+
+  activarCliente(clienteId: number) {
+    return this.clientesClient.send(
+      { cmd: 'clientes.activar' },
+      { id: clienteId },
+    );
+  }
 }

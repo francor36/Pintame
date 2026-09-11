@@ -5,6 +5,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Patch,
 } from '@nestjs/common';
 
 import {
@@ -22,7 +23,7 @@ import { ApiGatewayService } from '../services/api-gateway.service';
 export class ApiGatewayController {
   constructor(
     private readonly apiGatewayService: ApiGatewayService,
-  ) {}
+  ) { }
 
   @Get()
   @ApiOperation({
@@ -174,67 +175,104 @@ export class ApiGatewayController {
     return this.apiGatewayService.actualizarVencimientos(id);
   }
   @Post()
-@ApiOperation({
-  summary: 'Crear un nuevo cliente',
-})
-@ApiBody({
-  schema: {
-    type: 'object',
-    properties: {
-      dni: {
-        type: 'string',
-        example: '30123456',
+  @ApiOperation({
+    summary: 'Crear un nuevo cliente',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        dni: {
+          type: 'string',
+          example: '30123456',
+        },
+        nombre: {
+          type: 'string',
+          example: 'Juan',
+        },
+        apellido: {
+          type: 'string',
+          example: 'Pérez',
+        },
+        email: {
+          type: 'string',
+          example: 'juan@email.com',
+        },
+        telefono: {
+          type: 'string',
+          example: '2995555555',
+        },
+        direccion: {
+          type: 'string',
+          example: 'Av. Argentina 123',
+        },
       },
-      nombre: {
-        type: 'string',
-        example: 'Juan',
-      },
-      apellido: {
-        type: 'string',
-        example: 'Pérez',
-      },
-      email: {
-        type: 'string',
-        example: 'juan@email.com',
-      },
-      telefono: {
-        type: 'string',
-        example: '2995555555',
-      },
-      direccion: {
-        type: 'string',
-        example: 'Av. Argentina 123',
-      },
+      required: ['dni', 'nombre', 'apellido'],
     },
-    required: ['dni', 'nombre', 'apellido'],
-  },
-})
-crearCliente(
-  @Body()
-  body: {
-    dni: string;
-    nombre: string;
-    apellido: string;
-    email?: string;
-    telefono?: string;
-    direccion?: string;
-  },
-) {
-  return this.apiGatewayService.crearCliente(body);
-}
+  })
+  crearCliente(
+    @Body()
+    body: {
+      dni: string;
+      nombre: string;
+      apellido: string;
+      email?: string;
+      telefono?: string;
+      direccion?: string;
+    },
+  ) {
+    return this.apiGatewayService.crearCliente(body);
+  }
 
-@Get(':id')
-@ApiOperation({
-  summary: 'Obtener un cliente por ID',
-})
-@ApiParam({
-  name: 'id',
-  description: 'ID del cliente',
-  example: 1,
-})
-buscarCliente(
-  @Param('id', ParseIntPipe) id: number,
-) {
-  return this.apiGatewayService.buscarCliente(id);
-}
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Obtener un cliente por ID',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del cliente',
+    example: 1,
+  })
+  buscarCliente(
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.apiGatewayService.buscarCliente(id);
+  }
+  @Patch(':id/desactivar')
+  @ApiOperation({
+    summary: 'Desactivar un cliente',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del cliente',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Cliente desactivado correctamente',
+  })
+  desactivarCliente(
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.apiGatewayService.desactivarCliente(id);
+  }
+
+  @Patch(':id/activar')
+  @ApiOperation({
+    summary: 'Activar un cliente',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del cliente',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Cliente activado correctamente',
+  })
+  activarCliente(
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.apiGatewayService.activarCliente(id);
+  }
 }
