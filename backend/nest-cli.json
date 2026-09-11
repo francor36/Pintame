@@ -1,14 +1,11 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "apps/backend/src",
   "compilerOptions": {
     "deleteOutDir": true,
-    "webpack": true,
-    "tsConfigPath": "apps/backend/tsconfig.app.json"
+    "webpack": true
   },
   "monorepo": true,
-  "root": "apps/backend",
   "projects": {
     "api-gateway": {
       "type": "application",
@@ -28,15 +25,6 @@
         "tsConfigPath": "apps/auth/tsconfig.app.json"
       }
     },
-    "backend": {
-      "type": "application",
-      "root": "apps/backend",
-      "entryFile": "main",
-      "sourceRoot": "apps/backend/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/backend/tsconfig.app.json"
-      }
-    },
     "users": {
       "type": "application",
       "root": "apps/users",
@@ -44,6 +32,51 @@
       "sourceRoot": "apps/users/src",
       "compilerOptions": {
         "tsConfigPath": "apps/users/tsconfig.app.json"
+      }
+    },
+    "clientes": {
+      "type": "application",
+      "root": "apps/clientes",
+      "entryFile": "main",
+      "sourceRoot": "apps/clientes/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/clientes/tsconfig.app.json"
+      }
+    },
+    "ventas": {
+      "type": "application",
+      "root": "apps/ventas",
+      "entryFile": "main",
+      "sourceRoot": "apps/ventas/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/ventas/tsconfig.app.json"
+      }
+    },
+    "stock": {
+      "type": "application",
+      "root": "apps/stock",
+      "entryFile": "main",
+      "sourceRoot": "apps/stock/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/stock/tsconfig.app.json"
+      }
+    },
+    "caja": {
+      "type": "application",
+      "root": "apps/caja",
+      "entryFile": "main",
+      "sourceRoot": "apps/caja/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/caja/tsconfig.app.json"
+      }
+    },
+    "facturacion": {
+      "type": "application",
+      "root": "apps/facturacion",
+      "entryFile": "main",
+      "sourceRoot": "apps/facturacion/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/facturacion/tsconfig.app.json"
       }
     }
   }
