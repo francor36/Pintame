@@ -1,34 +1,35 @@
-import React, { useState } from 'react';
+//estructura principal con el header y el área de contenido//
+
+import { useState } from 'react';
 import Sidebar from './Sidebar';
 
-export default function MainLayout({ children }) {
+export default function MainLayout({ onLogout }) {
   const [activeSection, setActiveSection] = useState('dashboard');
 
   return (
     <div className="flex h-screen bg-slate-100 overflow-hidden font-sans">
-      {/* Barra lateral */}
-      <Sidebar setActiveSection={setActiveSection} />
+      <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} />
 
-      {/* Contenedor derecho (Header + Contenido) */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         
         {/* Header Superior */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-800 capitalize">
-            {activeSection}
+            Sección: {activeSection}
           </h2>
           
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-sm">
+              <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-sm">
                 A
               </div>
               <span className="text-sm font-medium text-slate-700">Hola, Ana</span>
             </div>
             
+            {/* Botón de Cerrar Sesión en tono gris sobrio */}
             <button 
-              onClick={() => alert('Cerrar sesión')}
-              className="text-sm text-red-600 hover:text-red-800 font-medium px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 transition-colors"
+              onClick={onLogout}
+              className="text-sm text-slate-600 hover:text-slate-900 font-medium px-3.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors"
             >
               Cerrar Sesión
             </button>
@@ -38,10 +39,11 @@ export default function MainLayout({ children }) {
         {/* Área de Contenido Dinámico */}
         <main className="flex-1 overflow-y-auto p-8">
           <div className="max-w-7xl mx-auto">
-            {/* Acá se van a cargar tus pantallas (Inventario, Ventas, etc.) */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <h3 className="text-xl font-bold text-slate-800 mb-2">Sección: {activeSection}</h3>
-              <p className="text-slate-600">Acá es donde va a ir la tabla o el contenido correspondiente a esta vista.</p>
+              <h3 className="text-xl font-bold text-slate-800 mb-2 capitalize">Vista de {activeSection}</h3>
+              <p className="text-slate-600">
+                Acá es donde vas a programar los componentes específicos de cada pantalla (como la tabla de inventario o la caja de ventas que diseñamos en los mockups).
+              </p>
             </div>
           </div>
         </main>
