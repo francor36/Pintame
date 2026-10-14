@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum EstadoCaja {
+  ABIERTA
+  CERRADA
+}
+
+enum TipoMovimientoCaja {
+  INGRESO
+  RETIRO
+  VENTA
+  GASTO
+  AJUSTE
+}
+
+model Caja {
+  id            Int         @id @default(autoincrement())
+  estado        EstadoCaja  @default(CERRADA)
+  montoInicial  Decimal     @db.Decimal(12, 2)
+  montoFinal    Decimal     @default(0) @db.Decimal(12, 2)
+  fechaApertura DateTime    @default(now())
+  fechaCierre   DateTime?
+  observacion   String?     @db.VarChar(500)
+
+  movimientos   MovimientoCaja[]
+
+  @@map("cajas")
+}
+
+model MovimientoCaja {
+  id           Int                @id @default(autoincrement())
+  tipo         TipoMovimientoCaja
+  monto        Decimal            @db.Decimal(12, 2)
+  descripcion  String?            @db.VarChar(500)
+  referencia   String?            @db.VarChar(100)
+  fecha        DateTime           @default(now())
+
+  cajaId       Int
+  caja         Caja               @relation(fields: [cajaId], references: [id])
+
+  @@map("movimientos_caja")
+}
