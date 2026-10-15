@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+
 import { ClientProxy } from '@nestjs/microservices';
 
 @Injectable()
@@ -6,7 +7,17 @@ export class ApiGatewayService {
   constructor(
     @Inject('CLIENTES_SERVICE')
     private readonly clientesClient: ClientProxy,
+
+    @Inject('CAJA_SERVICE')
+    private readonly cajaClient: ClientProxy,
+
+    @Inject('VENTAS_SERVICE')
+    private readonly ventasClient: ClientProxy,
   ) { }
+
+  // =====================================================
+  // CLIENTES
+  // =====================================================
 
   listarClientes() {
     return this.clientesClient.send(
@@ -80,6 +91,7 @@ export class ApiGatewayService {
       data,
     );
   }
+
   buscarCliente(clienteId: number) {
     return this.clientesClient.send(
       { cmd: 'clientes.buscar' },
@@ -88,6 +100,7 @@ export class ApiGatewayService {
       },
     );
   }
+
   desactivarCliente(clienteId: number) {
     return this.clientesClient.send(
       { cmd: 'clientes.desactivar' },
@@ -99,6 +112,93 @@ export class ApiGatewayService {
     return this.clientesClient.send(
       { cmd: 'clientes.activar' },
       { id: clienteId },
+    );
+  }
+
+
+  // =====================================================
+  // CAJA
+  // =====================================================
+
+  abrirCaja(montoInicial: number) {
+    return this.cajaClient.send(
+      { cmd: 'caja.abrir' },
+      {
+        montoInicial,
+      },
+    );
+  }
+
+  obtenerCajaAbierta() {
+    return this.cajaClient.send(
+      { cmd: 'caja.abierta' },
+      {},
+    );
+  }
+
+  buscarCaja(id: number) {
+    return this.cajaClient.send(
+      { cmd: 'caja.buscar' },
+      {
+        id,
+      },
+    );
+  }
+
+  registrarIngreso(
+    monto: number,
+    descripcion?: string,
+    referencia?: string,
+  ) {
+    return this.cajaClient.send(
+      { cmd: 'caja.ingreso' },
+      {
+        monto,
+        descripcion,
+        referencia,
+      },
+    );
+  }
+
+  registrarRetiro(
+    monto: number,
+    descripcion?: string,
+    referencia?: string,
+  ) {
+    return this.cajaClient.send(
+      { cmd: 'caja.retiro' },
+      {
+        monto,
+        descripcion,
+        referencia,
+      },
+    );
+  }
+
+  obtenerMovimientos(cajaId: number) {
+    return this.cajaClient.send(
+      { cmd: 'caja.movimientos' },
+      {
+        cajaId,
+      },
+    );
+  }
+  cerrarCaja(observacion?: string) {
+    return this.cajaClient.send(
+      { cmd: 'caja.cerrar' },
+      {
+        observacion,
+      },
+    );
+  }
+  // =====================================================
+  // VENTAS
+  // =====================================================
+
+  probarVentas() {
+    return this.ventasClient.send(
+      { cmd: 'ventas.prueba' },
+      {},
     );
   }
 }
