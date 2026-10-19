@@ -1,0 +1,43 @@
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/@prisma/client-ventas"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum EstadoVenta {
+  PENDIENTE
+  PAGADA
+  ANULADA
+}
+
+model Venta {
+  id          Int         @id @default(autoincrement())
+  numero      String      @unique @db.VarChar(30)
+  estado      EstadoVenta @default(PENDIENTE)
+  subtotal    Decimal     @db.Decimal(12, 2)
+  total       Decimal     @db.Decimal(12, 2)
+  observacion String?     @db.VarChar(500)
+  fecha       DateTime    @default(now())
+
+  detalles    DetalleVenta[]
+
+  @@map("ventas")
+}
+
+model DetalleVenta {
+  id             Int      @id @default(autoincrement())
+  productoId     String   @db.VarChar(100)
+  descripcion    String   @db.VarChar(255)
+  cantidad       Decimal  @db.Decimal(12, 3)
+  precioUnitario Decimal  @db.Decimal(12, 2)
+  subtotal       Decimal  @db.Decimal(12, 2)
+
+  ventaId        Int
+  venta          Venta    @relation(fields: [ventaId], references: [id])
+
+  @@map("detalles_venta")
+}

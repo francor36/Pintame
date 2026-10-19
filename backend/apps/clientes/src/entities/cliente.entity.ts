@@ -55,6 +55,12 @@ export class Cliente {
   })
   direccion!: string | null;
 
+  @Column({
+    type: 'boolean',
+    default: true,
+  })
+  activo!: boolean;
+
   @OneToOne(
     () => CuentaCorriente,
     (cuentaCorriente) => cuentaCorriente.cliente,
