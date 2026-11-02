@@ -1,0 +1,52 @@
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/@prisma/client-stock"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum EstadoProducto {
+  ACTIVO
+  INACTIVO
+}
+
+model Producto {
+  id             Int            @id @default(autoincrement())
+  codigo         String         @unique @db.VarChar(50)
+  nombre         String         @db.VarChar(150)
+  descripcion    String?        @db.VarChar(500)
+  precioCosto    Decimal        @db.Decimal(12, 2)
+  precioVenta    Decimal        @db.Decimal(12, 2)
+  stockActual    Decimal        @default(0) @db.Decimal(12, 3)
+  stockMinimo    Decimal        @default(0) @db.Decimal(12, 3)
+  estado         EstadoProducto @default(ACTIVO)
+  fechaCreacion  DateTime       @default(now())
+  fechaActualizacion DateTime   @updatedAt
+
+  movimientos    MovimientoStock[]
+
+  @@map("productos")
+}
+
+enum TipoMovimientoStock {
+  INGRESO
+  EGRESO
+  AJUSTE
+}
+
+model MovimientoStock {
+  id          Int                @id @default(autoincrement())
+  tipo        TipoMovimientoStock
+  cantidad    Decimal            @db.Decimal(12, 3)
+  motivo      String?            @db.VarChar(255)
+  referencia  String?            @db.VarChar(100)
+  fecha       DateTime           @default(now())
+
+  productoId  Int
+  producto    Producto           @relation(fields: [productoId], references: [id])
+
+  @@map("movimientos_stock")
+}
