@@ -119,6 +119,39 @@ export class CajaService {
     return movimiento;
   }
 
+  async registrarVenta(
+    monto: number,
+    descripcion?: string,
+    referencia?: string,
+  ) {
+    if (!Number.isFinite(monto) || monto <= 0) {
+      throw new ConflictException('El monto de la venta debe ser mayor a 0');
+    }
+
+    if (referencia) {
+      const existente = await this.prisma.movimientoCaja.findFirst({
+        where: { tipo: 'VENTA', referencia },
+      });
+      if (existente) {
+        if (Number(existente.monto) !== monto) {
+          throw new ConflictException('La referencia ya existe con otro monto');
+        }
+        return existente;
+      }
+    }
+
+    const caja = await this.obtenerCajaAbierta();
+    return this.prisma.movimientoCaja.create({
+      data: {
+        tipo: 'VENTA',
+        monto,
+        descripcion: descripcion ?? null,
+        referencia: referencia ?? null,
+        cajaId: caja.id,
+      },
+    });
+  }
+
   // =========================
   // REGISTRAR RETIRO
   // =========================

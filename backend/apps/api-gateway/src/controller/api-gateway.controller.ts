@@ -6,6 +6,7 @@ import {
   ParseIntPipe,
   Post,
   Patch,
+  UseGuards,
 } from '@nestjs/common';
 
 import {
@@ -14,11 +15,15 @@ import {
   ApiParam,
   ApiResponse,
   ApiTags,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 
 import { ApiGatewayService } from '../services/api-gateway.service';
+import { AccessTokenGuard } from '../auth/access-token.guard';
 
 @ApiTags('Clientes')
+@ApiBearerAuth('access-token')
+@UseGuards(AccessTokenGuard)
 @Controller('clientes')
 export class ApiGatewayController {
   constructor(

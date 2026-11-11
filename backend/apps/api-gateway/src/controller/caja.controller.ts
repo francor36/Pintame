@@ -5,6 +5,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 
 import {
@@ -13,11 +14,15 @@ import {
   ApiParam,
   ApiResponse,
   ApiTags,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 
 import { ApiGatewayService } from '../services/api-gateway.service';
+import { AccessTokenGuard } from '../auth/access-token.guard';
 
 @ApiTags('Caja')
+@ApiBearerAuth('access-token')
+@UseGuards(AccessTokenGuard)
 @Controller('caja')
 export class CajaController {
   constructor(

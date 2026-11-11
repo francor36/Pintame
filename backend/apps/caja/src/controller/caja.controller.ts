@@ -2,7 +2,7 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern } from '@nestjs/microservices';
 import { RpcException } from '@nestjs/microservices';
 import { CajaService } from '../services/caja.service';
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 
 @Controller()
 export class CajaController {
@@ -69,6 +69,29 @@ export class CajaController {
       data.descripcion,
       data.referencia,
     );
+  }
+
+  @MessagePattern({ cmd: 'caja.venta' })
+  async registrarVenta(data: {
+    monto: number;
+    descripcion?: string;
+    referencia?: string;
+  }) {
+    try {
+      return await this.cajaService.registrarVenta(
+        data.monto,
+        data.descripcion,
+        data.referencia,
+      );
+    } catch (error) {
+      if (error instanceof ConflictException || error instanceof NotFoundException) {
+        throw new RpcException({
+          statusCode: error instanceof ConflictException ? 409 : 404,
+          message: error.message,
+        });
+      }
+      throw error;
+    }
   }
 
   // =========================

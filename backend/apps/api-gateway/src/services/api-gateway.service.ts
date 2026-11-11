@@ -13,6 +13,9 @@ export class ApiGatewayService {
 
     @Inject('VENTAS_SERVICE')
     private readonly ventasClient: ClientProxy,
+
+    @Inject('STOCK_SERVICE')
+    private readonly stockClient: ClientProxy,
   ) { }
 
   // =====================================================
@@ -199,6 +202,60 @@ export class ApiGatewayService {
     return this.ventasClient.send(
       { cmd: 'ventas.prueba' },
       {},
+    );
+  }
+
+  listarVentas() {
+    return this.ventasClient.send({ cmd: 'ventas.listar' }, {});
+  }
+
+  buscarVenta(id: number) {
+    return this.ventasClient.send({ cmd: 'ventas.buscar' }, { id });
+  }
+
+  crearVenta(data: {
+    detalles: Array<{ productoId: number; cantidad: number }>;
+    observacion?: string;
+  }) {
+    return this.ventasClient.send({ cmd: 'ventas.crear' }, data);
+  }
+
+  confirmarVenta(id: number) {
+    return this.ventasClient.send({ cmd: 'ventas.confirmar' }, { id });
+  }
+
+  anularVenta(id: number) {
+    return this.ventasClient.send({ cmd: 'ventas.anular' }, { id });
+  }
+
+  // STOCK
+  listarProductos() {
+    return this.stockClient.send({ cmd: 'stock.productos.listar' }, {});
+  }
+
+  crearProducto(data: Record<string, unknown>) {
+    return this.stockClient.send({ cmd: 'stock.productos.crear' }, data);
+  }
+
+  buscarProducto(id: number) {
+    return this.stockClient.send({ cmd: 'stock.productos.buscar' }, { id });
+  }
+
+  actualizarProducto(id: number, data: Record<string, unknown>) {
+    return this.stockClient.send(
+      { cmd: 'stock.productos.actualizar' },
+      { id, data },
+    );
+  }
+
+  registrarMovimiento(data: Record<string, unknown>) {
+    return this.stockClient.send({ cmd: 'stock.movimientos.crear' }, data);
+  }
+
+  listarMovimientos(productoId: number) {
+    return this.stockClient.send(
+      { cmd: 'stock.movimientos.listar' },
+      { productoId },
     );
   }
 }
