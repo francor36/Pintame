@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import {
   ClientsModule,
   Transport,
@@ -14,6 +15,9 @@ import { VentasController } from './controller/ventas.controller';
 import { StockController } from './controller/stock.controller';
 import { GatewayAuthController } from './controller/auth.controller';
 import { GatewayUsersController } from './controller/users.controller';
+import { FacturasController } from './controller/facturas.controller';
+import { GatewayLogsController } from './controller/logs.controller';
+import { AuditLogInterceptor } from './interceptors/audit-log.interceptor';
 import { AccessTokenGuard } from './auth/access-token.guard';
 import { AdminGuard } from './auth/admin.guard';
 
@@ -77,6 +81,22 @@ import { AdminGuard } from './auth/admin.guard';
           port: Number(process.env.USERS_PORT ?? 3007),
         },
       },
+      {
+        name: 'FACTURACION_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: process.env.FACTURACION_HOST ?? 'localhost',
+          port: Number(process.env.FACTURACION_PORT ?? 3005),
+        },
+      },
+      {
+        name: 'LOGS_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: process.env.LOGS_HOST ?? 'localhost',
+          port: Number(process.env.LOGS_PORT ?? 3008),
+        },
+      },
     ]),
   ],
 
@@ -87,12 +107,18 @@ import { AdminGuard } from './auth/admin.guard';
     StockController,
     GatewayAuthController,
     GatewayUsersController,
+    FacturasController,
+    GatewayLogsController,
   ],
 
   providers: [
     ApiGatewayService,
     AccessTokenGuard,
     AdminGuard,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditLogInterceptor,
+    },
   ],
 })
 export class ApiGatewayModule {}

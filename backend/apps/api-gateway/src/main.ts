@@ -2,9 +2,11 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { ApiGatewayModule } from './api-gateway.module';
+import { RpcHttpExceptionFilter } from './filters/rpc-http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(ApiGatewayModule);
+  app.useGlobalFilters(new RpcHttpExceptionFilter());
 
   const config = new DocumentBuilder()
     .setTitle('Pintame API')

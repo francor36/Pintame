@@ -78,6 +78,15 @@
       "compilerOptions": {
         "tsConfigPath": "apps/facturacion/tsconfig.app.json"
       }
+    },
+    "logs": {
+      "type": "application",
+      "root": "apps/logs",
+      "entryFile": "main",
+      "sourceRoot": "apps/logs/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/logs/tsconfig.app.json"
+      }
     }
   }
 }

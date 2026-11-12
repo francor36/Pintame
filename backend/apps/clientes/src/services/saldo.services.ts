@@ -1,218 +1,212 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { DataSource, EntityManager } from 'typeorm';
 import {
   MovimientoSaldo,
   TipoMovimientoSaldo,
   EstadoMovimientoSaldo,
 } from '../entities/movimiento-saldo.entity';
+import { Cliente } from '../entities/cliente.entity';
 
 @Injectable()
 export class SaldoService {
-  constructor(
-    @InjectRepository(MovimientoSaldo)
-    private readonly movimientoSaldoRepository: Repository<MovimientoSaldo>,
-  ) {}
+  constructor(private readonly dataSource: DataSource) {}
 
-  /**
-   * Genera saldo a favor a partir de una NTDC.
-   *
-   * El saldo tiene una vigencia de 30 días.
-   */
+  /** Carga NTDC como saldo a favor, con vigencia de 30 días. */
   async generarSaldoPorNtdc(
     clienteId: number,
     monto: number,
     referencia: string,
     observacion?: string,
   ) {
-    if (monto <= 0) {
-      throw new Error('El monto de la NTDC debe ser mayor a 0');
-    }
+    this.validarMonto(monto);
+    const ref = this.validarReferencia(referencia);
 
-    const fecha = new Date();
+    return this.dataSource.transaction(async (manager) => {
+      await this.obtenerCliente(manager, clienteId, true);
+      const repo = manager.getRepository(MovimientoSaldo);
+      const duplicado = await repo.findOne({
+        where: { cliente: { id: clienteId }, tipo: TipoMovimientoSaldo.NTDC, referencia: ref },
+      });
+      if (duplicado) {
+        throw new ConflictException(`Ya existe un saldo con la referencia ${ref}`);
+      }
 
-    const fechaVencimiento = new Date(fecha);
-    fechaVencimiento.setDate(fechaVencimiento.getDate() + 30);
-
-    const movimiento = this.movimientoSaldoRepository.create({
-      tipo: TipoMovimientoSaldo.NTDC,
-      monto,
-      montoDisponible: monto,
-      fecha,
-      fechaVencimiento,
-      estado: EstadoMovimientoSaldo.ACTIVO,
-      referencia,
-      observacion: observacion ?? null,
-      cliente: {
-        id: clienteId,
-      },
+      const fecha = new Date();
+      const fechaVencimiento = new Date(fecha);
+      fechaVencimiento.setDate(fechaVencimiento.getDate() + 30);
+      const movimiento = repo.create({
+        tipo: TipoMovimientoSaldo.NTDC,
+        monto,
+        montoDisponible: monto,
+        fecha,
+        fechaVencimiento,
+        estado: EstadoMovimientoSaldo.ACTIVO,
+        referencia: ref,
+        observacion: observacion ?? null,
+        cliente: { id: clienteId },
+      });
+      return repo.save(movimiento);
     });
-
-    return this.movimientoSaldoRepository.save(movimiento);
   }
 
-  /**
-   * Obtiene el saldo disponible de un cliente.
-   */
   async obtenerSaldo(clienteId: number) {
+    await this.obtenerCliente(this.dataSource.manager, clienteId);
     await this.actualizarVencimientos(clienteId);
-
-    const movimientos = await this.movimientoSaldoRepository.find({
+    const movimientos = await this.dataSource.getRepository(MovimientoSaldo).find({
       where: {
-        cliente: {
-          id: clienteId,
-        },
+        cliente: { id: clienteId },
         tipo: TipoMovimientoSaldo.NTDC,
         estado: EstadoMovimientoSaldo.ACTIVO,
       },
-      order: {
-        fechaVencimiento: 'ASC',
-      },
+      order: { fechaVencimiento: 'ASC' },
     });
-
     const saldoDisponible = movimientos.reduce(
-      (total, movimiento) =>
-        total + Number(movimiento.montoDisponible),
+      (total, movimiento) => total + Number(movimiento.montoDisponible),
       0,
     );
-
-    return {
-      clienteId,
-      saldoDisponible,
-      movimientos,
-    };
+    return { clienteId, saldoDisponible, movimientos };
   }
 
-  /**
-   * Consume saldo a favor.
-   *
-   * Se utiliza primero el saldo que vence más próximo.
-   */
+  /** Consume saldo FIFO en una transacción: un fallo revierte todos los cambios. */
   async consumirSaldo(
     clienteId: number,
     monto: number,
     referencia: string,
     observacion?: string,
   ) {
-    if (monto <= 0) {
-      throw new Error('El monto a consumir debe ser mayor a 0');
-    }
+    this.validarMonto(monto);
+    const ref = this.validarReferencia(referencia);
 
-    await this.actualizarVencimientos(clienteId);
+    return this.dataSource.transaction(async (manager) => {
+      await this.obtenerCliente(manager, clienteId, true);
+      const repo = manager.getRepository(MovimientoSaldo);
+      const duplicado = await repo.findOne({
+        where: { cliente: { id: clienteId }, tipo: TipoMovimientoSaldo.CONSUMO, referencia: ref },
+      });
+      if (duplicado) {
+        throw new ConflictException(`Ya existe un consumo con la referencia ${ref}`);
+      }
 
-    const movimientos = await this.movimientoSaldoRepository.find({
-      where: {
-        cliente: {
-          id: clienteId,
+      const ahora = new Date();
+      const activos = await repo.find({
+        where: {
+          cliente: { id: clienteId },
+          tipo: TipoMovimientoSaldo.NTDC,
+          estado: EstadoMovimientoSaldo.ACTIVO,
         },
-        tipo: TipoMovimientoSaldo.NTDC,
-        estado: EstadoMovimientoSaldo.ACTIVO,
-      },
-      order: {
-        fechaVencimiento: 'ASC',
-      },
-    });
-
-    let restante = monto;
-    const consumos: MovimientoSaldo[] = [];
-
-    for (const movimiento of movimientos) {
-      if (restante <= 0) {
-        break;
-      }
-
-      const disponible = Number(movimiento.montoDisponible);
-
-      if (disponible <= 0) {
-        continue;
-      }
-
-      const consumir = Math.min(disponible, restante);
-
-      movimiento.montoDisponible = disponible - consumir;
-
-      if (movimiento.montoDisponible === 0) {
-        movimiento.estado = EstadoMovimientoSaldo.CONSUMIDO;
-      }
-
-      await this.movimientoSaldoRepository.save(movimiento);
-
-      const consumo = this.movimientoSaldoRepository.create({
-        tipo: TipoMovimientoSaldo.CONSUMO,
-        monto: consumir,
-        montoDisponible: 0,
-        fecha: new Date(),
-        fechaVencimiento: null,
-        estado: EstadoMovimientoSaldo.CONSUMIDO,
-        referencia,
-        observacion:
-          observacion ??
-          `Consumo de saldo generado por ${movimiento.referencia}`,
-        cliente: {
-          id: clienteId,
-        },
+        order: { fechaVencimiento: 'ASC' },
+        lock: { mode: 'pessimistic_write' },
       });
 
-      const consumoGuardado =
-        await this.movimientoSaldoRepository.save(consumo);
+      const vigentes: MovimientoSaldo[] = [];
+      for (const movimiento of activos) {
+        if (movimiento.fechaVencimiento && movimiento.fechaVencimiento <= ahora) {
+          movimiento.estado = EstadoMovimientoSaldo.VENCIDO;
+          await repo.save(movimiento);
+        } else {
+          vigentes.push(movimiento);
+        }
+      }
 
-      consumos.push(consumoGuardado);
-
-      restante -= consumir;
-    }
-
-    if (restante > 0) {
-      throw new Error(
-        `Saldo insuficiente. Faltan $${restante.toFixed(2)}`,
+      const saldoDisponible = vigentes.reduce(
+        (total, movimiento) => total + Number(movimiento.montoDisponible),
+        0,
       );
-    }
+      if (saldoDisponible < monto) {
+        throw new BadRequestException(
+          `Saldo insuficiente. Disponible: $${saldoDisponible.toFixed(2)}`,
+        );
+      }
 
-    const saldoActual = await this.obtenerSaldo(clienteId);
+      let restante = monto;
+      const consumos: MovimientoSaldo[] = [];
+      for (const movimiento of vigentes) {
+        if (restante <= 0) break;
+        const disponible = Number(movimiento.montoDisponible);
+        if (disponible <= 0) continue;
+        const consumir = Math.min(disponible, restante);
+        const nuevoDisponible = Number((disponible - consumir).toFixed(2));
+        movimiento.montoDisponible = nuevoDisponible;
+        if (nuevoDisponible === 0) movimiento.estado = EstadoMovimientoSaldo.CONSUMIDO;
+        await repo.save(movimiento);
 
-    return {
-      clienteId,
-      montoConsumido: monto,
-      saldoDisponible: saldoActual.saldoDisponible,
-      consumos,
-    };
+        const consumo = repo.create({
+          tipo: TipoMovimientoSaldo.CONSUMO,
+          monto: consumir,
+          montoDisponible: 0,
+          fecha: new Date(),
+          fechaVencimiento: null,
+          estado: EstadoMovimientoSaldo.CONSUMIDO,
+          referencia: ref,
+          observacion: observacion ?? `Consumo de saldo generado por ${movimiento.referencia}`,
+          cliente: { id: clienteId },
+        });
+        consumos.push(await repo.save(consumo));
+        restante = Number((restante - consumir).toFixed(2));
+      }
+
+      return {
+        clienteId,
+        montoConsumido: monto,
+        saldoDisponible: Number((saldoDisponible - monto).toFixed(2)),
+        consumos,
+      };
+    });
   }
 
-  /**
-   * Marca como vencidos los saldos cuya fecha de vencimiento
-   * ya pasó.
-   */
   async actualizarVencimientos(clienteId: number) {
-    const ahora = new Date();
-
-    const movimientos = await this.movimientoSaldoRepository.find({
-      where: {
-        cliente: {
-          id: clienteId,
+    return this.dataSource.transaction(async (manager) => {
+      await this.obtenerCliente(manager, clienteId, true);
+      const repo = manager.getRepository(MovimientoSaldo);
+      const activos = await repo.find({
+        where: {
+          cliente: { id: clienteId },
+          tipo: TipoMovimientoSaldo.NTDC,
+          estado: EstadoMovimientoSaldo.ACTIVO,
         },
-        tipo: TipoMovimientoSaldo.NTDC,
-        estado: EstadoMovimientoSaldo.ACTIVO,
-      },
-    });
-
-    const vencidos: MovimientoSaldo[] = [];
-
-    for (const movimiento of movimientos) {
-      if (
-        movimiento.fechaVencimiento &&
-        movimiento.fechaVencimiento <= ahora
-      ) {
-        movimiento.estado = EstadoMovimientoSaldo.VENCIDO;
-
-        const actualizado =
-          await this.movimientoSaldoRepository.save(movimiento);
-
-        vencidos.push(actualizado);
+        lock: { mode: 'pessimistic_write' },
+      });
+      const ahora = new Date();
+      const vencidos: MovimientoSaldo[] = [];
+      for (const movimiento of activos) {
+        if (movimiento.fechaVencimiento && movimiento.fechaVencimiento <= ahora) {
+          movimiento.estado = EstadoMovimientoSaldo.VENCIDO;
+          vencidos.push(await repo.save(movimiento));
+        }
       }
-    }
+      return { clienteId, movimientosVencidos: vencidos.length };
+    });
+  }
 
-    return {
-      clienteId,
-      movimientosVencidos: vencidos.length,
-    };
+  private validarMonto(monto: number) {
+    if (!Number.isFinite(monto) || monto <= 0) {
+      throw new BadRequestException('El monto debe ser mayor a 0');
+    }
+    if (Math.round(monto * 100) !== monto * 100) {
+      throw new BadRequestException('El monto admite hasta dos decimales');
+    }
+  }
+
+  private validarReferencia(referencia: string) {
+    const ref = referencia?.trim();
+    if (!ref || ref.length > 100) {
+      throw new BadRequestException('La referencia es obligatoria y admite hasta 100 caracteres');
+    }
+    return ref;
+  }
+
+  private async obtenerCliente(manager: EntityManager, id: number, lock = false) {
+    const cliente = await manager.getRepository(Cliente).findOne({
+      where: { id },
+      ...(lock ? { lock: { mode: 'pessimistic_write' as const } } : {}),
+    });
+    if (!cliente) throw new NotFoundException(`No existe el cliente ${id}`);
+    if (!cliente.activo) throw new ConflictException(`El cliente ${id} está inactivo`);
+    return cliente;
   }
 }

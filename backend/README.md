@@ -1,98 +1,80 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Pintame — Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend NestJS en monorepo. El API Gateway expone HTTP/REST y se comunica por TCP con los microservicios.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Servicios
 
-## Description
+| Servicio | Puerto predeterminado | Persistencia |
+| --- | ---: | --- |
+| API Gateway | `3000` | — |
+| Clientes | `3001` | PostgreSQL |
+| Ventas | `3002` | PostgreSQL |
+| Stock | `3003` | MySQL |
+| Caja | `3004` | MySQL |
+| Facturación | `3005` | MySQL |
+| Auth | `3006` | MySQL, a través de Usuarios |
+| Usuarios | `3007` | MySQL |
+| Logs | `3008` | MongoDB |
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Los puertos se pueden cambiar con las variables correspondientes del archivo `.env`. Los servicios usan las bases que configuran `POSTGRES_*`, `VENTAS_DATABASE_URL`, `STOCK_DATABASE_URL` y `MYSQL_*`.
+Logs usa `MONGO_HOST` (predeterminado `localhost`), `MONGO_PORT`, `MONGO_USER`, `MONGO_PASSWORD` y `MONGO_DB` (predeterminado `pintame_logs`).
 
-## Project setup
+## Configuración local
 
-```bash
-$ npm install
+Crear `.env` a partir de la configuración local del proyecto y definir, además de las conexiones de base y puertos:
+
+```env
+JWT_SECRET=<secreto aleatorio de al menos 32 caracteres>
+BOOTSTRAP_ADMIN_EMAIL=<identificador de acceso>
+BOOTSTRAP_ADMIN_NAME=<nombre visible>
+BOOTSTRAP_ADMIN_PASSWORD=<contraseña de al menos 12 caracteres>
 ```
 
-## Compile and run the project
+Usuarios crea la tabla aditiva `usuarios` al iniciar. Si no existe la cuenta indicada, crea el primer usuario con rol `ADMIN`. La contraseña se almacena con hash. No se deben subir `.env`, contraseñas ni tokens al repositorio.
 
-```bash
-# development
-$ npm run start
+## Arranque local
 
-# watch mode
-$ npm run start:dev
+Iniciar PostgreSQL y MySQL con los contenedores locales. Luego ejecutar cada comando en una terminal separada:
 
-# production mode
-$ npm run start:prod
+```powershell
+npm run start:clientes
+npm run start:stock
+npm run start:caja
+npm run start:ventas
+npm run start:facturacion
+npm run start:users
+npm run start:auth
+npm run start:logs
+npm run start:dev
 ```
 
-## Run tests
+Las dependencias de negocio deben estar disponibles antes de usar el Gateway. En particular, Ventas depende de Stock y Caja; Facturación depende de Ventas.
 
-```bash
-# unit tests
-$ npm run test
+## Autenticación
 
-# e2e tests
-$ npm run test:e2e
+`POST /auth/login` recibe `{ "email": "...", "password": "..." }` y devuelve un bearer token JWT. Enviar ese token en las demás rutas protegidas:
 
-# test coverage
-$ npm run test:cov
+```http
+Authorization: Bearer <accessToken>
 ```
 
-## Deployment
+`GET /auth/perfil` devuelve el usuario del token. Las rutas `/users` requieren rol `ADMIN`; permiten listar, buscar, crear y actualizar usuarios. El rol predeterminado al crear un usuario es `CAJERO`.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+Los usuarios autenticados pueden operar Clientes, Caja, Stock, Ventas y Facturación. El Gateway documenta las rutas en `/docs`.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## Flujos principales
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+- **Stock**: productos y movimientos de ingreso, egreso y ajuste.
+- **Ventas**: crear venta pendiente; confirmar descuenta stock y registra el cobro en Caja; anular solo ventas pendientes.
+- **Clientes**: clientes, saldo a favor NTDC con vencimiento de 30 días y consumo FIFO transaccional.
+- **Caja**: apertura, ingresos, ventas, retiros, movimientos y cierre.
+- **Facturación**: emitir un comprobante **interno clase B** para una venta pagada con `POST /facturas/ventas/:ventaId`. No se conecta con ARCA ni genera CAE. Solo se admite un comprobante por venta. También se puede listar con `GET /facturas`, consultar por ID con `GET /facturas/:id` o por venta con `GET /facturas/ventas/:ventaId`.
+- **Logs**: el Gateway registra automáticamente método, ruta, estado, duración y usuario, sin guardar tokens, contraseñas ni cuerpos de petición. Los administradores pueden consultar eventos recientes en `GET /logs` y un evento por ID en `GET /logs/:id`.
+
+## Build
+
+```powershell
+npm run build
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+El build regenera los clientes Prisma de Stock y Ventas desde sus esquemas y compila los nueve proyectos Nest. Los comandos `start:stock` y `start:ventas` también regeneran esos clientes para recuperarlos después de una instalación de dependencias. Esto no aplica cambios a las bases; no ejecutar resets para iniciar el sistema.
