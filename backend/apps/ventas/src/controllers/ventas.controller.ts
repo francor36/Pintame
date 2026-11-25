@@ -15,13 +15,13 @@ export class VentasController {
   }
 
   @MessagePattern({ cmd: 'ventas.listar' })
-  listarVentas() {
-    return this.handle(() => this.ventasService.listarVentas());
+  listarVentas(data?: { usuarioId?: number }) {
+    return this.handle(() => this.ventasService.listarVentas(data?.usuarioId));
   }
 
   @MessagePattern({ cmd: 'ventas.buscar' })
-  buscarVenta(data: { id: number }) {
-    return this.handle(() => this.ventasService.buscarVenta(data.id));
+  buscarVenta(data: { id: number; usuarioId?: number }) {
+    return this.handle(() => this.ventasService.buscarVenta(data.id, data.usuarioId));
   }
 
   @MessagePattern({ cmd: 'ventas.crear' })
@@ -30,13 +30,18 @@ export class VentasController {
   }
 
   @MessagePattern({ cmd: 'ventas.confirmar' })
-  confirmarVenta(data: { id: number }) {
-    return this.handle(() => this.ventasService.confirmarVenta(data.id));
+  confirmarVenta(data: { id: number; usuarioId?: number }) {
+    return this.handle(() => this.ventasService.confirmarVenta(data.id, data.usuarioId));
+  }
+
+  @MessagePattern({ cmd: 'ventas.reintentar-confirmacion' })
+  reintentarConfirmacion(data: { id: number }) {
+    return this.handle(() => this.ventasService.reintentarConfirmacion(data.id));
   }
 
   @MessagePattern({ cmd: 'ventas.anular' })
-  anularVenta(data: { id: number }) {
-    return this.handle(() => this.ventasService.anularVenta(data.id));
+  anularVenta(data: { id: number; usuarioId?: number }) {
+    return this.handle(() => this.ventasService.anularVenta(data.id, data.usuarioId));
   }
 
   private async handle<T>(operation: () => Promise<T>): Promise<T> {

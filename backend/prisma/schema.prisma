@@ -27,6 +27,10 @@ model Caja {
   fechaApertura DateTime    @default(now())
   fechaCierre   DateTime?
   observacion   String?     @db.VarChar(500)
+  usuarioAperturaId     Int?
+  usuarioAperturaNombre String?  @db.VarChar(150)
+  usuarioCierreId       Int?
+  usuarioCierreNombre   String?  @db.VarChar(150)
 
   movimientos   MovimientoCaja[]
 

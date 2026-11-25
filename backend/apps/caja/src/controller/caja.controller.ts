@@ -17,10 +17,14 @@ export class CajaController {
   @MessagePattern({ cmd: 'caja.abrir' })
   async abrirCaja(data: {
     montoInicial: number;
+    usuarioAperturaId?: number;
+    usuarioAperturaNombre?: string;
   }) {
     try {
       return await this.cajaService.abrirCaja(
         data.montoInicial,
+        data.usuarioAperturaId,
+        data.usuarioAperturaNombre,
       );
     } catch (error) {
       if (error instanceof ConflictException) {
@@ -52,6 +56,11 @@ export class CajaController {
     id: number;
   }) {
     return this.cajaService.obtenerPorId(data.id);
+  }
+
+  @MessagePattern({ cmd: 'caja.listar' })
+  listarCajas() {
+    return this.cajaService.listarCajas();
   }
 
   // =========================
@@ -130,9 +139,13 @@ export class CajaController {
   @MessagePattern({ cmd: 'caja.cerrar' })
   cerrarCaja(data: {
     observacion?: string;
+    usuarioCierreId?: number;
+    usuarioCierreNombre?: string;
   }) {
     return this.cajaService.cerrarCaja(
       data.observacion,
+      data.usuarioCierreId,
+      data.usuarioCierreNombre,
     );
   }
 }

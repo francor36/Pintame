@@ -5,6 +5,7 @@ import {
 } from '@nestjs/microservices';
 
 import { VentasModule } from './ventas.module';
+import { RpcHttpExceptionFilter } from './rpc-http-exception.filter';
 
 async function bootstrap() {
   const app =
@@ -19,6 +20,7 @@ async function bootstrap() {
       },
     );
 
+  app.useGlobalFilters(new RpcHttpExceptionFilter());
   await app.listen();
 }
 

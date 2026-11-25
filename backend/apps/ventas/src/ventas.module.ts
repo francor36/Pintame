@@ -3,7 +3,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 
-import { PrismaVentasModule } from '../database/prisma-ventas.module';
+import { PrismaVentasModule } from './database/prisma-ventas.module';
 import { VentasController } from './controllers/ventas.controller';
 import { VentasService } from './services/ventas.service';
 

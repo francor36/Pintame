@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiGatewayService } from '../services/api-gateway.service';
+import { AdminGuard } from '../auth/admin.guard';
 import { AccessTokenGuard } from '../auth/access-token.guard';
 
 @ApiTags('Stock')
@@ -26,6 +27,7 @@ export class StockController {
   }
 
   @Post('productos')
+  @UseGuards(AdminGuard)
   @ApiOperation({ summary: 'Crear un producto' })
   crearProducto(@Body() body: Record<string, unknown>) {
     return this.apiGatewayService.crearProducto(body);
@@ -38,6 +40,7 @@ export class StockController {
   }
 
   @Patch('productos/:id')
+  @UseGuards(AdminGuard)
   @ApiOperation({ summary: 'Actualizar los datos de un producto' })
   actualizarProducto(
     @Param('id', ParseIntPipe) id: number,
@@ -47,6 +50,7 @@ export class StockController {
   }
 
   @Post('productos/:id/movimientos')
+  @UseGuards(AdminGuard)
   @ApiOperation({ summary: 'Registrar ingreso, egreso o ajuste de stock' })
   registrarMovimiento(
     @Param('id', ParseIntPipe) productoId: number,

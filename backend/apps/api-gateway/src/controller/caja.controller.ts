@@ -5,6 +5,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 
@@ -18,7 +19,9 @@ import {
 } from '@nestjs/swagger';
 
 import { ApiGatewayService } from '../services/api-gateway.service';
+import { AdminGuard } from '../auth/admin.guard';
 import { AccessTokenGuard } from '../auth/access-token.guard';
+import type { AuthenticatedRequest } from '../auth/access-token.guard';
 
 @ApiTags('Caja')
 @ApiBearerAuth('access-token')
@@ -34,6 +37,7 @@ export class CajaController {
   // =====================================================
 
   @Post('abrir')
+  @UseGuards(AdminGuard)
   @ApiOperation({
     summary: 'Abrir una nueva caja',
   })
@@ -54,6 +58,7 @@ export class CajaController {
     description: 'Caja abierta correctamente',
   })
   abrirCaja(
+    @Req() request: AuthenticatedRequest,
     @Body()
     body: {
       montoInicial: number;
@@ -61,6 +66,8 @@ export class CajaController {
   ) {
     return this.apiGatewayService.abrirCaja(
       body.montoInicial,
+      request.user!.sub,
+      request.user!.nombre,
     );
   }
 
@@ -78,6 +85,13 @@ export class CajaController {
   })
   obtenerCajaAbierta() {
     return this.apiGatewayService.obtenerCajaAbierta();
+  }
+
+  @Get('historial')
+  @UseGuards(AdminGuard)
+  @ApiOperation({ summary: 'Listar cajas para el historial administrativo' })
+  listarCajas() {
+    return this.apiGatewayService.listarCajas();
   }
 
   // =====================================================
@@ -104,6 +118,7 @@ export class CajaController {
   // =====================================================
 
   @Post('ingreso')
+  @UseGuards(AdminGuard)
   @ApiOperation({
     summary: 'Registrar un ingreso en caja',
   })
@@ -151,6 +166,7 @@ export class CajaController {
   // =====================================================
 
   @Post('retiro')
+  @UseGuards(AdminGuard)
   @ApiOperation({
     summary: 'Registrar un retiro de caja',
   })
@@ -222,6 +238,7 @@ export class CajaController {
   // =====================================================
 
   @Post('cerrar')
+  @UseGuards(AdminGuard)
   @ApiOperation({
     summary: 'Cerrar la caja actualmente abierta',
   })
@@ -241,6 +258,7 @@ export class CajaController {
     description: 'Caja cerrada correctamente',
   })
   cerrarCaja(
+    @Req() request: AuthenticatedRequest,
     @Body()
     body: {
       observacion?: string;
@@ -248,6 +266,8 @@ export class CajaController {
   ) {
     return this.apiGatewayService.cerrarCaja(
       body.observacion,
+      request.user!.sub,
+      request.user!.nombre,
     );
   }
 

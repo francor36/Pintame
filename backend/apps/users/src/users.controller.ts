@@ -32,6 +32,7 @@ export class UsersController {
     nombre?: string;
     rol?: 'ADMIN' | 'CAJERO';
     activo?: boolean;
+    password?: string;
   }) {
     return this.usersService.actualizar(id, input);
   }

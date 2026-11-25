@@ -47,6 +47,18 @@ export class Caja {
   })
   fechaCierre!: Date | null;
 
+  @Column({ type: 'int', nullable: true })
+  usuarioAperturaId!: number | null;
+
+  @Column({ type: 'varchar', length: 150, nullable: true })
+  usuarioAperturaNombre!: string | null;
+
+  @Column({ type: 'int', nullable: true })
+  usuarioCierreId!: number | null;
+
+  @Column({ type: 'varchar', length: 150, nullable: true })
+  usuarioCierreNombre!: string | null;
+
   @Column({
     type: 'varchar',
     length: 500,

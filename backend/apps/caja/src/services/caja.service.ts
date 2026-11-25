@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { PrismaService } from '../../../../prisma/src/database/prisma.service';
+import { PrismaService } from '../database/prisma.service';
 
 @Injectable()
 export class CajaService {
@@ -17,7 +17,7 @@ export class CajaService {
   // ABRIR CAJA
   // =========================
 
-  async abrirCaja(montoInicial: number) {
+  async abrirCaja(montoInicial: number, usuarioAperturaId?: number, usuarioAperturaNombre?: string) {
     this.validarMonto(montoInicial, true);
 
     const cajaAbierta = await this.prisma.caja.findFirst({
@@ -39,6 +39,8 @@ export class CajaService {
         montoFinal: 0,
         fechaCierre: null,
         observacion: null,
+        usuarioAperturaId: usuarioAperturaId ?? null,
+        usuarioAperturaNombre: usuarioAperturaNombre ?? null,
       },
     });
 
@@ -85,6 +87,13 @@ export class CajaService {
     return caja;
   }
 
+  listarCajas() {
+    return this.prisma.caja.findMany({
+      orderBy: { fechaApertura: 'desc' },
+      include: { _count: { select: { movimientos: true } } },
+    });
+  }
+
   // =========================
   // REGISTRAR INGRESO
   // =========================
@@ -121,27 +130,36 @@ export class CajaService {
     this.validarMonto(monto);
     this.validarTextoMovimiento(descripcion, referencia);
 
-    if (referencia) {
-      const existente = await this.prisma.movimientoCaja.findFirst({
-        where: { tipo: 'VENTA', referencia },
-      });
-      if (existente) {
-        if (Number(existente.monto) !== monto) {
-          throw new ConflictException('La referencia ya existe con otro monto');
-        }
-        return existente;
-      }
-    }
+    return this.prisma.$transaction(async (tx) => {
+      // Serializa cobros de ventas sobre la caja abierta para que un reintento
+      // TCP con respuesta perdida no pueda duplicar el movimiento de caja.
+      const cajas = await tx.$queryRaw<Array<{ id: number }>>`
+        SELECT id FROM cajas WHERE estado = 'ABIERTA' ORDER BY id DESC LIMIT 1 FOR UPDATE
+      `;
+      const caja = cajas[0];
+      if (!caja) throw new NotFoundException('No existe una caja abierta');
 
-    const caja = await this.obtenerCajaAbierta();
-    return this.prisma.movimientoCaja.create({
-      data: {
-        tipo: 'VENTA',
-        monto,
-        descripcion: descripcion ?? null,
-        referencia: referencia ?? null,
-        cajaId: caja.id,
-      },
+      if (referencia) {
+        const existente = await tx.movimientoCaja.findFirst({
+          where: { tipo: 'VENTA', referencia },
+        });
+        if (existente) {
+          if (Number(existente.monto) !== monto) {
+            throw new ConflictException('La referencia ya existe con otro monto');
+          }
+          return existente;
+        }
+      }
+
+      return tx.movimientoCaja.create({
+        data: {
+          tipo: 'VENTA',
+          monto,
+          descripcion: descripcion ?? null,
+          referencia: referencia ?? null,
+          cajaId: caja.id,
+        },
+      });
     });
   }
 
@@ -233,7 +251,7 @@ export class CajaService {
       },
     });
   }
-  async cerrarCaja(observacion?: string) {
+  async cerrarCaja(observacion?: string, usuarioCierreId?: number, usuarioCierreNombre?: string) {
     if (observacion !== undefined && (typeof observacion !== 'string' || observacion.length > 500)) {
       throw new BadRequestException('La observación admite hasta 500 caracteres');
     }
@@ -279,6 +297,8 @@ export class CajaService {
           montoFinal: montoFinalCentavos / 100,
           fechaCierre: new Date(),
           observacion: observacion ?? null,
+          usuarioCierreId: usuarioCierreId ?? null,
+          usuarioCierreNombre: usuarioCierreNombre ?? null,
         },
       });
 

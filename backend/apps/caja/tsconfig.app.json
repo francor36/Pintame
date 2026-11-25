@@ -2,6 +2,8 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "declaration": false,
+    "incremental": false,
+    "rootDir": "src",
     "outDir": "../../dist/apps/caja"
   },
   "include": ["src/**/*"],

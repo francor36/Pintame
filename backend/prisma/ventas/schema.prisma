@@ -10,6 +10,7 @@ datasource db {
 
 enum EstadoVenta {
   PENDIENTE
+  PROCESANDO
   PAGADA
   ANULADA
 }
@@ -22,6 +23,12 @@ model Venta {
   total       Decimal     @db.Decimal(12, 2)
   observacion String?     @db.VarChar(500)
   fecha       DateTime    @default(now())
+  confirmacionToken      String?   @db.VarChar(36)
+  confirmacionLeaseHasta DateTime?
+  usuarioId              Int?
+  usuarioNombre          String?   @db.VarChar(150)
+  ubicacionLatitud       Float?
+  ubicacionLongitud      Float?
 
   detalles    DetalleVenta[]
 

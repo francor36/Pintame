@@ -22,6 +22,7 @@ type UpdateUserInput = {
   nombre?: string;
   rol?: RolUsuario;
   activo?: boolean;
+  password?: string;
 };
 
 @Injectable()
@@ -127,10 +128,14 @@ export class UsersService implements OnModuleInit, OnModuleDestroy {
     if (input.nombre !== undefined && (!input.nombre.trim() || input.nombre.trim().length > 150)) {
       throw new BadRequestException('El nombre no puede estar vacío y admite hasta 150 caracteres');
     }
+    if (input.password !== undefined && (typeof input.password !== 'string' || input.password.length < 8)) {
+      throw new BadRequestException('La nueva contraseña debe tener al menos 8 caracteres');
+    }
     await this.obtener(id);
+    const passwordHash = input.password ? await bcrypt.hash(input.password, 12) : null;
     await this.pool.query(
-      'UPDATE usuarios SET nombre = COALESCE(?, nombre), rol = COALESCE(?, rol), activo = COALESCE(?, activo) WHERE id = ?',
-      [input.nombre?.trim() ?? null, input.rol ?? null, input.activo ?? null, id],
+      'UPDATE usuarios SET nombre = COALESCE(?, nombre), rol = COALESCE(?, rol), activo = COALESCE(?, activo), password_hash = COALESCE(?, password_hash) WHERE id = ?',
+      [input.nombre?.trim() ?? null, input.rol ?? null, input.activo ?? null, passwordHash, id],
     );
     return this.obtener(id);
   }

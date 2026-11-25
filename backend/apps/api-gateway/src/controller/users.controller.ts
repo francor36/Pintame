@@ -1,5 +1,6 @@
 import {
   Body,
+  BadRequestException,
   Controller,
   Get,
   Inject,
@@ -7,6 +8,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -14,6 +16,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom, timeout } from 'rxjs';
 import { AdminGuard } from '../auth/admin.guard';
 import { AccessTokenGuard } from '../auth/access-token.guard';
+import type { AuthenticatedRequest } from '../auth/access-token.guard';
 
 @ApiTags('Usuarios')
 @ApiBearerAuth('access-token')
@@ -47,11 +50,15 @@ export class GatewayUsersController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Actualizar nombre, rol o estado activo (solo ADMIN)' })
+  @ApiOperation({ summary: 'Actualizar datos, estado o contraseña (solo ADMIN)' })
   actualizar(
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: { nombre?: string; rol?: 'ADMIN' | 'CAJERO'; activo?: boolean },
+    @Body() body: { nombre?: string; rol?: 'ADMIN' | 'CAJERO'; activo?: boolean; password?: string },
+    @Req() request: AuthenticatedRequest,
   ) {
+    if (id === request.user?.sub && (body.activo === false || body.rol === 'CAJERO')) {
+      throw new BadRequestException('No podés desactivar tu propio usuario ni quitarte el rol ADMIN');
+    }
     return firstValueFrom(
       this.usersClient
         .send({ cmd: 'users.actualizar' }, { id, ...body })

@@ -18,6 +18,9 @@ model Producto {
   codigo         String         @unique @db.VarChar(50)
   nombre         String         @db.VarChar(150)
   descripcion    String?        @db.VarChar(500)
+  imagenUrl      String?        @db.VarChar(500)
+  ubicacionLatitud  Float?       @db.Double
+  ubicacionLongitud Float?       @db.Double
   precioCosto    Decimal        @db.Decimal(12, 2)
   precioVenta    Decimal        @db.Decimal(12, 2)
   stockActual    Decimal        @default(0) @db.Decimal(12, 3)

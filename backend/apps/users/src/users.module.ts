@@ -16,6 +16,7 @@ import { UsersService } from './users.service';
         user: process.env.MYSQL_USER,
         password: process.env.MYSQL_PASSWORD,
         database: process.env.MYSQL_DB,
+        allowPublicKeyRetrieval: true,
         connectionLimit: 5,
       }),
     },

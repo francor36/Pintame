@@ -123,11 +123,13 @@ export class ApiGatewayService {
   // CAJA
   // =====================================================
 
-  abrirCaja(montoInicial: number) {
+  abrirCaja(montoInicial: number, usuarioAperturaId?: number, usuarioAperturaNombre?: string) {
     return this.cajaClient.send(
       { cmd: 'caja.abrir' },
       {
         montoInicial,
+        usuarioAperturaId,
+        usuarioAperturaNombre,
       },
     );
   }
@@ -146,6 +148,10 @@ export class ApiGatewayService {
         id,
       },
     );
+  }
+
+  listarCajas() {
+    return this.cajaClient.send({ cmd: 'caja.listar' }, {});
   }
 
   registrarIngreso(
@@ -186,11 +192,13 @@ export class ApiGatewayService {
       },
     );
   }
-  cerrarCaja(observacion?: string) {
+  cerrarCaja(observacion?: string, usuarioCierreId?: number, usuarioCierreNombre?: string) {
     return this.cajaClient.send(
       { cmd: 'caja.cerrar' },
       {
         observacion,
+        usuarioCierreId,
+        usuarioCierreNombre,
       },
     );
   }
@@ -205,27 +213,35 @@ export class ApiGatewayService {
     );
   }
 
-  listarVentas() {
-    return this.ventasClient.send({ cmd: 'ventas.listar' }, {});
+  listarVentas(usuarioId?: number) {
+    return this.ventasClient.send({ cmd: 'ventas.listar' }, { usuarioId });
   }
 
-  buscarVenta(id: number) {
-    return this.ventasClient.send({ cmd: 'ventas.buscar' }, { id });
+  buscarVenta(id: number, usuarioId?: number) {
+    return this.ventasClient.send({ cmd: 'ventas.buscar' }, { id, usuarioId });
   }
 
   crearVenta(data: {
     detalles: Array<{ productoId: number; cantidad: number }>;
     observacion?: string;
+    usuarioId: number;
+    usuarioNombre: string;
+    ubicacionLatitud?: number;
+    ubicacionLongitud?: number;
   }) {
     return this.ventasClient.send({ cmd: 'ventas.crear' }, data);
   }
 
-  confirmarVenta(id: number) {
-    return this.ventasClient.send({ cmd: 'ventas.confirmar' }, { id });
+  confirmarVenta(id: number, usuarioId?: number) {
+    return this.ventasClient.send({ cmd: 'ventas.confirmar' }, { id, usuarioId });
   }
 
-  anularVenta(id: number) {
-    return this.ventasClient.send({ cmd: 'ventas.anular' }, { id });
+  reintentarConfirmacionVenta(id: number) {
+    return this.ventasClient.send({ cmd: 'ventas.reintentar-confirmacion' }, { id });
+  }
+
+  anularVenta(id: number, usuarioId?: number) {
+    return this.ventasClient.send({ cmd: 'ventas.anular' }, { id, usuarioId });
   }
 
   // STOCK

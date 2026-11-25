@@ -18,6 +18,7 @@ Backend NestJS en monorepo. El API Gateway expone HTTP/REST y se comunica por TC
 
 Los puertos se pueden cambiar con las variables correspondientes del archivo `.env`. Los servicios usan las bases que configuran `POSTGRES_*`, `VENTAS_DATABASE_URL`, `STOCK_DATABASE_URL` y `MYSQL_*`.
 Logs usa `MONGO_HOST` (predeterminado `localhost`), `MONGO_PORT`, `MONGO_USER`, `MONGO_PASSWORD` y `MONGO_DB` (predeterminado `pintame_logs`).
+Para el frontend web, el Gateway permite en desarrollo orígenes Expo locales (`localhost` o IPv4 privada, puerto 8081/8082). En producción, configurar `CORS_ORIGINS` con los orígenes web permitidos separados por comas.
 
 ## Configuración local
 

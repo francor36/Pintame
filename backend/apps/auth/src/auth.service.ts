@@ -1,14 +1,17 @@
-import {
-  Inject,
-  Injectable,
-  ServiceUnavailableException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { ClientProxy } from '@nestjs/microservices';
+import { ClientProxy, RpcException } from '@nestjs/microservices';
 import * as bcrypt from 'bcrypt';
 import { firstValueFrom, timeout } from 'rxjs';
-import { UsuarioInterno } from '../../users/src/users.types';
+
+type UsuarioInterno = {
+  id: number;
+  email: string;
+  nombre: string;
+  rol: 'ADMIN' | 'CAJERO';
+  activo: boolean;
+  passwordHash: string;
+};
 
 @Injectable()
 export class AuthService {
@@ -19,10 +22,16 @@ export class AuthService {
 
   async login(email: string, password: string) {
     if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) {
-      throw new UnauthorizedException('Email o contraseña incorrectos');
+      throw new RpcException({
+        statusCode: 401,
+        message: 'Email o contraseña incorrectos',
+      });
     }
     if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-      throw new ServiceUnavailableException('Configurar JWT_SECRET con al menos 32 caracteres');
+      throw new RpcException({
+        statusCode: 503,
+        message: 'Configurar JWT_SECRET con al menos 32 caracteres',
+      });
     }
 
     let user: UsuarioInterno | null;
@@ -33,10 +42,16 @@ export class AuthService {
           .pipe(timeout(8000)),
       );
     } catch {
-      throw new ServiceUnavailableException('El servicio de usuarios no está disponible');
+      throw new RpcException({
+        statusCode: 503,
+        message: 'El servicio de usuarios no está disponible',
+      });
     }
     if (!user || !user.activo || !(await bcrypt.compare(password, user.passwordHash))) {
-      throw new UnauthorizedException('Email o contraseña incorrectos');
+      throw new RpcException({
+        statusCode: 401,
+        message: 'Email o contraseña incorrectos',
+      });
     }
 
     const accessToken = await this.jwt.signAsync({

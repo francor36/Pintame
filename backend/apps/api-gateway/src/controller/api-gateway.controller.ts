@@ -20,6 +20,7 @@ import {
 
 import { ApiGatewayService } from '../services/api-gateway.service';
 import { AccessTokenGuard } from '../auth/access-token.guard';
+import { AdminGuard } from '../auth/admin.guard';
 
 @ApiTags('Clientes')
 @ApiBearerAuth('access-token')
@@ -94,6 +95,7 @@ export class ApiGatewayController {
     status: 201,
     description: 'Saldo generado correctamente',
   })
+  @UseGuards(AdminGuard)
   generarSaldoPorNtdc(
     @Param('id', ParseIntPipe) id: number,
     @Body()
@@ -144,6 +146,7 @@ export class ApiGatewayController {
     status: 201,
     description: 'Saldo consumido correctamente',
   })
+  @UseGuards(AdminGuard)
   consumirSaldo(
     @Param('id', ParseIntPipe) id: number,
     @Body()
@@ -174,6 +177,7 @@ export class ApiGatewayController {
     status: 201,
     description: 'Vencimientos actualizados correctamente',
   })
+  @UseGuards(AdminGuard)
   actualizarVencimientos(
     @Param('id', ParseIntPipe) id: number,
   ) {
@@ -244,6 +248,7 @@ export class ApiGatewayController {
     return this.apiGatewayService.buscarCliente(id);
   }
   @Patch(':id/desactivar')
+  @UseGuards(AdminGuard)
   @ApiOperation({
     summary: 'Desactivar un cliente',
   })
@@ -263,6 +268,7 @@ export class ApiGatewayController {
   }
 
   @Patch(':id/activar')
+  @UseGuards(AdminGuard)
   @ApiOperation({
     summary: 'Activar un cliente',
   })

@@ -11,8 +11,12 @@ type ProductoInput = {
   codigo: string;
   nombre: string;
   descripcion?: string;
+  imagenUrl?: string | null;
+  ubicacionLatitud?: number | null;
+  ubicacionLongitud?: number | null;
   precioCosto: number;
   precioVenta: number;
+  stockInicial?: number;
   stockMinimo?: number;
 };
 
@@ -35,15 +39,33 @@ export class StockService {
   async crearProducto(data: ProductoInput) {
     const values = this.validarProducto(data, false);
     try {
-      return await this.prisma.producto.create({
-        data: {
-          codigo: values.codigo!,
-          nombre: values.nombre!,
-          descripcion: values.descripcion,
-          precioCosto: values.precioCosto!,
-          precioVenta: values.precioVenta!,
-          stockMinimo: values.stockMinimo ?? 0,
-        },
+      return await this.prisma.$transaction(async (tx) => {
+        const producto = await tx.producto.create({
+          data: {
+            codigo: values.codigo!,
+            nombre: values.nombre!,
+            descripcion: values.descripcion,
+            imagenUrl: values.imagenUrl,
+            ubicacionLatitud: values.ubicacionLatitud,
+            ubicacionLongitud: values.ubicacionLongitud,
+            precioCosto: values.precioCosto!,
+            precioVenta: values.precioVenta!,
+            stockActual: values.stockInicial ?? 0,
+            stockMinimo: values.stockMinimo ?? 0,
+          },
+        });
+        if ((values.stockInicial ?? 0) > 0) {
+          await tx.movimientoStock.create({
+            data: {
+              tipo: TipoMovimientoStock.INGRESO,
+              cantidad: values.stockInicial!,
+              motivo: 'Stock inicial al crear producto',
+              referencia: `ALTA-PRODUCTO-${producto.id}`,
+              productoId: producto.id,
+            },
+          });
+        }
+        return producto;
       });
     } catch (error) {
       this.mapUniqueCode(error);
@@ -70,6 +92,9 @@ export class StockService {
           codigo: values.codigo,
           nombre: values.nombre,
           descripcion: values.descripcion,
+          imagenUrl: values.imagenUrl,
+          ubicacionLatitud: values.ubicacionLatitud,
+          ubicacionLongitud: values.ubicacionLongitud,
           precioCosto: values.precioCosto,
           precioVenta: values.precioVenta,
           stockMinimo: values.stockMinimo,
@@ -210,14 +235,32 @@ export class StockService {
       (typeof data.descripcion !== 'string' || data.descripcion.length > 500)) {
       throw new BadRequestException('La descripción admite hasta 500 caracteres');
     }
+    if (data.imagenUrl !== undefined && data.imagenUrl !== null && data.imagenUrl !== '') {
+      if (typeof data.imagenUrl !== 'string' || data.imagenUrl.length > 500 || !/^https:\/\//i.test(data.imagenUrl.trim())) {
+        throw new BadRequestException('La imagen debe tener una URL HTTPS válida de hasta 500 caracteres');
+      }
+    }
+    const hasLatitude = data.ubicacionLatitud !== undefined && data.ubicacionLatitud !== null;
+    const hasLongitude = data.ubicacionLongitud !== undefined && data.ubicacionLongitud !== null;
+    if (hasLatitude !== hasLongitude) {
+      throw new BadRequestException('La latitud y la longitud deben enviarse juntas');
+    }
+    if (hasLatitude && (typeof data.ubicacionLatitud !== 'number' || !Number.isFinite(data.ubicacionLatitud) || data.ubicacionLatitud < -90 || data.ubicacionLatitud > 90)) {
+      throw new BadRequestException('La latitud debe estar entre -90 y 90');
+    }
+    if (hasLongitude && (typeof data.ubicacionLongitud !== 'number' || !Number.isFinite(data.ubicacionLongitud) || data.ubicacionLongitud < -180 || data.ubicacionLongitud > 180)) {
+      throw new BadRequestException('La longitud debe estar entre -180 y 180');
+    }
     this.validarDecimal(data.precioCosto, 'El precio de costo', 2, 9999999999.99);
     this.validarDecimal(data.precioVenta, 'El precio de venta', 2, 9999999999.99);
+    this.validarDecimal(data.stockInicial, 'El stock inicial', 3, 999999999.999);
     this.validarDecimal(data.stockMinimo, 'El stock mínimo', 3, 999999999.999);
     return {
       ...data,
       codigo,
       nombre,
       descripcion: data.descripcion === null ? null : data.descripcion,
+      imagenUrl: data.imagenUrl === '' ? null : data.imagenUrl,
     };
   }
 
